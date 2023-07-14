@@ -1,0 +1,87 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  creationTimestamp: '2023-07-13T06:03:58Z'
+  generation: 2
+  managedFields:
+    - apiVersion: tekton.dev/v1beta1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          .: {}
+          'f:finally': {}
+          'f:params': {}
+          'f:resources': {}
+          'f:tasks': {}
+          'f:workspaces': {}
+      manager: Mozilla
+      operation: Update
+      time: '2023-07-13T06:57:21Z'
+  name: newpipe
+  namespace: adarshass
+  resourceVersion: '93462213'
+  uid: a713c8af-cddb-4825-b98b-78b238b6b328
+spec:
+  params:
+    - default: 'https://github.com/Adhiadarsh/metrobus-repairs-nlp-workshop.git'
+      description: The GitHub Repo of the Java Application
+      name: GITHUB_REPO_URL
+      type: string
+    - default: main
+      description: The GitHub revision to use
+      name: GITHUB_REPO_REVISION
+      type: string
+  tasks:
+    - name: clone-sources
+      params:
+        - name: url
+          value: $(params.GITHUB_REPO_URL)
+        - name: revision
+          value: $(params.GITHUB_REPO_REVISION)
+        - name: deleteExisting
+          value: 'true'
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: pvc
+    - name: s2i-python-ml
+      params:
+        - name: VERSION
+          value: latest
+        - name: PATH_CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: 'true'
+        - name: IMAGE
+          value: quay.io/adhis/adhi-ai-ml
+        - name: BUILDER_IMAGE
+          value: >-
+            registry.redhat.io/rhel8/buildah@sha256:00795fafdab9bbaa22cd29d1faa1a01e604e4884a2c935c1bf8e3d1f0ad1c084
+        - name: SKIP_PUSH
+          value: 'false'
+        - name: ENV_VARS
+          value: []
+      runAfter:
+        - clone-sources
+      taskRef:
+        kind: Task
+        name: s2i-python-ml
+      workspaces:
+        - name: source
+          workspace: pvc
+    - name: ai-ml-deploy-manifests
+      params:
+        - name: manifest_dir
+          value: k8s
+      runAfter:
+        - s2i-python-ml
+      taskRef:
+        kind: Task
+        name: ai-ml-deploy-manifests
+      workspaces:
+        - name: source
+          workspace: pvc
+  workspaces:
+    - name: pvc

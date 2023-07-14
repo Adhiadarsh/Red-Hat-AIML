@@ -1,0 +1,42 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  creationTimestamp: '2023-07-13T06:13:02Z'
+  generation: 1
+  managedFields:
+    - apiVersion: tekton.dev/v1beta1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          .: {}
+          'f:params': {}
+          'f:steps': {}
+          'f:workspaces': {}
+      manager: Mozilla
+      operation: Update
+      time: '2023-07-13T06:13:02Z'
+  name: ai-ml-deploy-manifests
+  namespace: adarshass
+  resourceVersion: '92878128'
+  uid: 9afdb31c-eb9a-407a-b55f-492b91c7a3e0
+spec:
+  params:
+    - default: k8s
+      description: The directory in source that contains yaml manifests
+      name: manifest_dir
+      type: string
+  steps:
+    - args:
+        - |-
+          echo Applying manifests in $(inputs.params.manifest_dir) directory
+          oc apply -f $(inputs.params.manifest_dir)
+          echo -----------------------------------
+      command:
+        - /bin/bash
+        - '-c'
+      image: 'image-registry.openshift-image-registry.svc:5000/openshift/cli:latest'
+      name: apply
+      resources: {}
+      workingDir: /workspace/source
+  workspaces:
+    - name: source
